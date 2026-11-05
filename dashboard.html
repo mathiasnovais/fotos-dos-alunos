@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e6e63">
+<title>Painel de Fotos — ALFA CEM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #f5f7f6;
+    --surface: #ffffff;
+    --ink: #22282a;
+    --muted: #5b6467;
+    --accent: #0e6e63;
+    --accent-ink: #0a5049;
+    --accent-soft: #e2f0ed;
+    --border: #dfe5e3;
+    --pend-soft: #fdf0e3;
+    --pend-ink: #8a4b0f;
+    --err-soft: #fbe7e7;
+    --err-ink: #a12626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Public Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  [hidden] { display: none !important; }
+
+  header.app {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  header.app .title { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 17px; }
+  header.app .who { color: var(--muted); font-size: 13px; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header.app a.voltar, header.app button {
+    font: inherit; font-size: 13.5px; text-decoration: none;
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--ink); padding: 7px 12px; cursor: pointer;
+  }
+
+  main { max-width: 760px; margin: 0 auto; padding: 22px 16px 60px; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 26px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px;
+  }
+  .card .num { font-family: "Archivo", sans-serif; font-size: 30px; font-weight: 700; line-height: 1.15; }
+  .card .lbl { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .card.destaque .num { color: var(--accent); }
+
+  .geral {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; margin-bottom: 26px;
+  }
+  .geral .linha1 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .geral h2 { font-family: "Archivo", sans-serif; font-size: 16px; margin: 0; }
+  .geral .pct { font-family: "IBM Plex Mono", monospace; font-weight: 500; color: var(--accent-ink); }
+
+  .bar { background: var(--ground); border-radius: 99px; height: 14px; overflow: hidden; }
+  .bar > i {
+    display: block; height: 100%; background: var(--accent);
+    border-radius: 99px; transition: width .5s ease;
+  }
+  .bar.pequena { height: 9px; }
+
+  h2.secao { font-family: "Archivo", sans-serif; font-size: 15px; margin: 0 0 4px; }
+  .serie-grupo { margin-bottom: 22px; }
+  .serie-nome {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 8px;
+  }
+
+  details.turma {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 8px; overflow: hidden;
+  }
+  details.turma summary {
+    list-style: none; cursor: pointer; padding: 13px 16px;
+    display: grid; grid-template-columns: minmax(84px, auto) 1fr auto; gap: 14px; align-items: center;
+  }
+  details.turma summary::-webkit-details-marker { display: none; }
+  .turma-nome { font-weight: 600; font-size: 14.5px; }
+  .turma-num { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .turma-num strong { color: var(--accent-ink); font-weight: 500; }
+  .pendentes { border-top: 1px solid var(--border); padding: 10px 16px 14px; }
+  .pendentes .t { font-size: 12.5px; font-weight: 600; color: var(--pend-ink); margin: 4px 0 6px; }
+  .pendentes ul { margin: 0; padding: 0 0 0 18px; font-size: 13.5px; color: var(--muted); }
+  .pendentes .completa { font-size: 13.5px; color: var(--accent-ink); margin: 4px 0 0; }
+
+  .estado { text-align: center; color: var(--muted); padding: 60px 20px; }
+  .estado a { color: var(--accent); }
+  .msg-err {
+    background: var(--err-soft); color: var(--err-ink);
+    font-size: 13.5px; border-radius: 8px; padding: 10px 14px; margin: 20px auto; max-width: 500px;
+  }
+  .atualizado { text-align: center; color: var(--muted); font-size: 12px; margin-top: 26px; }
+
+  @media (max-width: 520px) {
+    .cards { grid-template-columns: 1fr 1fr; }
+    .cards .card:first-child { grid-column: 1 / -1; }
+    details.turma summary { grid-template-columns: 1fr auto; }
+    details.turma summary .bar { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="title">Painel de Fotos</div>
+  <div class="who" id="whoami"></div>
+  <a class="voltar" href="index.html">Enviar fotos</a>
+  <button id="btnSair" type="button" hidden>Sair</button>
+</header>
+
+<main>
+  <div class="estado" id="carregando">Carregando…</div>
+
+  <div class="estado" id="semLogin" hidden>
+    <p>Você precisa entrar para ver o painel.</p>
+    <p><a href="index.html">Fazer login na página de envio</a> e voltar aqui.</p>
+  </div>
+
+  <div class="msg-err" id="msgErro" hidden></div>
+
+  <div id="painel" hidden>
+    <div class="cards">
+      <div class="card destaque">
+        <div class="num" id="numPct">–</div>
+        <div class="lbl">das fotos enviadas</div>
+      </div>
+      <div class="card">
+        <div class="num" id="numEnviadas">–</div>
+        <div class="lbl">fotos enviadas</div>
+      </div>
+      <div class="card">
+        <div class="num" id="numPendentes">–</div>
+        <div class="lbl">alunos pendentes</div>
+      </div>
+    </div>
+
+    <div class="geral">
+      <div class="linha1">
+        <h2>Andamento geral</h2>
+        <span class="pct" id="pctGeral">–</span>
+      </div>
+      <div class="bar"><i id="barGeral" style="width:0%"></i></div>
+    </div>
+
+    <h2 class="secao">Por turma</h2>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Toque numa turma para ver quem ainda está pendente.</p>
+    <div id="turmas"></div>
+
+    <div class="atualizado" id="atualizado"></div>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+"use strict";
+
+const CONFIG = {
+  // URL do projeto e chave anon vêm de config.js (copie config.exemplo.js).
+  ...window.CONFIG_PROJETO,
+};
+
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const $ = (id) => document.getElementById(id);
+
+// Ordem pedagógica das séries e das turmas dentro de cada série
+const ORDEM_SERIES = ["Educação Infantil", "Anos Iniciais", "Anos Finais", "Ensino Médio"];
+const ORDEM_TURMAS = [
+  "Bercário", "Maternal", "Infantil 1", "Infantil 2", "Infantil 3",
+  "1º Ano", "2º Ano", "3º Ano", "4º Ano", "5º Ano",
+  "6º ANO", "7º ANO", "8º ANO", "9º ANO",
+  "1ª Série", "2ª Série", "3ª Série",
+];
+const posTurma = (t) => { const i = ORDEM_TURMAS.indexOf(t); return i === -1 ? 99 : i; };
+
+$("btnSair").addEventListener("click", async () => {
+  await sb.auth.signOut();
+  location.href = "index.html";
+});
+
+async function iniciar() {
+  const { data } = await sb.auth.getSession();
+  if (!data.session) {
+    $("carregando").hidden = true;
+    $("semLogin").hidden = false;
+    return;
+  }
+  const email = data.session.user.email;
+  $("whoami").textContent = email;
+  $("btnSair").hidden = false;
+
+  // Mesma checagem do app de envio: precisa ser supervisor ativo
+  const { data: sup } = await sb.from("supervisores")
+    .select("id").eq("email", email).eq("ativo", true).maybeSingle();
+  if (!sup) {
+    $("carregando").hidden = true;
+    $("semLogin").hidden = false;
+    return;
+  }
+
+  const { data: alunos, error } = await sb.from("alunos")
+    .select("id, nome, matricula, turma, serie, fotos(id)")
+    .eq("ativo", true)
+    .order("nome");
+
+  $("carregando").hidden = true;
+  if (error) {
+    $("msgErro").hidden = false;
+    $("msgErro").textContent = "Erro ao carregar os dados: " + error.message;
+    return;
+  }
+  render(alunos.map((a) => ({ ...a, temFoto: (a.fotos || []).length > 0 })));
+}
+
+function render(alunos) {
+  const total = alunos.length;
+  const enviadas = alunos.filter((a) => a.temFoto).length;
+  const pct = total ? Math.round((enviadas / total) * 100) : 0;
+
+  $("numPct").textContent = pct + "%";
+  $("numEnviadas").textContent = enviadas + " / " + total;
+  $("numPendentes").textContent = total - enviadas;
+  $("pctGeral").textContent = enviadas + " de " + total + " · " + pct + "%";
+  $("barGeral").style.width = pct + "%";
+
+  // Agrupa por série > turma
+  const porSerie = new Map();
+  for (const a of alunos) {
+    if (!porSerie.has(a.serie)) porSerie.set(a.serie, new Map());
+    const turmas = porSerie.get(a.serie);
+    if (!turmas.has(a.turma)) turmas.set(a.turma, []);
+    turmas.get(a.turma).push(a);
+  }
+
+  const series = [...porSerie.keys()].sort((x, y) => {
+    const ix = ORDEM_SERIES.indexOf(x), iy = ORDEM_SERIES.indexOf(y);
+    return (ix === -1 ? 99 : ix) - (iy === -1 ? 99 : iy);
+  });
+
+  const cont = $("turmas");
+  cont.innerHTML = "";
+  for (const serie of series) {
+    const grupo = document.createElement("div");
+    grupo.className = "serie-grupo";
+    const h = document.createElement("p");
+    h.className = "serie-nome";
+    h.textContent = serie;
+    grupo.appendChild(h);
+
+    const turmas = [...porSerie.get(serie).entries()].sort((x, y) => posTurma(x[0]) - posTurma(y[0]));
+    for (const [turma, lista] of turmas) {
+      const env = lista.filter((a) => a.temFoto).length;
+      const tPct = Math.round((env / lista.length) * 100);
+      const pend = lista.filter((a) => !a.temFoto);
+
+      const det = document.createElement("details");
+      det.className = "turma";
+      const sum = document.createElement("summary");
+      sum.innerHTML =
+        '<span class="turma-nome"></span>' +
+        '<span class="bar pequena"><i style="width:' + tPct + '%"></i></span>' +
+        '<span class="turma-num"><strong>' + env + "</strong>/" + lista.length + " · " + tPct + "%</span>";
+      sum.querySelector(".turma-nome").textContent = turma;
+      det.appendChild(sum);
+
+      const box = document.createElement("div");
+      box.className = "pendentes";
+      if (pend.length === 0) {
+        box.innerHTML = '<p class="completa">Turma completa — todas as fotos enviadas. ✓</p>';
+      } else {
+        const t = document.createElement("p");
+        t.className = "t";
+        t.textContent = "Pendentes (" + pend.length + "):";
+        const ul = document.createElement("ul");
+        for (const a of pend) {
+          const li = document.createElement("li");
+          li.textContent = a.nome + " (" + a.matricula + ")";
+          ul.appendChild(li);
+        }
+        box.appendChild(t);
+        box.appendChild(ul);
+      }
+      det.appendChild(box);
+      grupo.appendChild(det);
+    }
+    cont.appendChild(grupo);
+  }
+
+  $("atualizado").textContent = "Atualizado em " + new Date().toLocaleString("pt-BR");
+  $("painel").hidden = false;
+}
+
+iniciar();
+</script>
+</body>
+</html>

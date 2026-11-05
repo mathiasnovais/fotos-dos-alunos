@@ -1,0 +1,277 @@
+{
+  "name": "Fotos dos Alunos — organizar pasta antiga (mover por turma)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "org-trigger",
+      "name": "Executar (manual)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://SEU-PROJETO.supabase.co/rest/v1/alunos?select=matricula,nome,turma&limit=10000",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer COLE_AQUI_A_SERVICE_ROLE_KEY" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "org-alunos",
+      "name": "Buscar alunos (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "'COLE_AQUI_O_ID_DA_PASTA_DO_DRIVE' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'"
+            },
+            { "name": "fields", "value": "nextPageToken,files(id,name)" },
+            { "name": "pageSize", "value": "1000" },
+            { "name": "supportsAllDrives", "value": "true" },
+            { "name": "includeItemsFromAllDrives", "value": "true" }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "pageToken",
+                    "value": "={{ $response.body.nextPageToken }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.nextPageToken }}",
+              "requestInterval": 0
+            }
+          }
+        }
+      },
+      "id": "org-listar",
+      "name": "Listar fotos da pasta origem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Junta as páginas de arquivos e descobre a turma de cada foto pelo nome (matricula-nome.jpg)\nconst alunos = $('Buscar alunos (Supabase)').all().map(i => i.json);\nconst porMatricula = {};\nfor (const a of alunos) porMatricula[String(a.matricula)] = a.turma;\n\nconst fotos = [];\nfor (const pagina of $input.all()) {\n  for (const f of (pagina.json.files || [])) fotos.push(f);\n}\n\nconst out = [];\nfor (const f of fotos) {\n  const nomeArquivo = f.name || '';\n  let turma = null;\n  const prefixo = nomeArquivo.split('-')[0];\n  if (porMatricula[prefixo] !== undefined) {\n    turma = porMatricula[prefixo];\n  } else {\n    // fallback: matrículas que contêm '-' — testa se o nome começa com 'matricula-'\n    const achou = alunos.find(a => nomeArquivo.startsWith(String(a.matricula) + '-'));\n    if (achou) turma = achou.turma;\n  }\n  out.push({ json: { fileId: f.id, fileName: nomeArquivo, turma } });\n}\nreturn out;"
+      },
+      "id": "org-preparar",
+      "name": "Descobrir turma de cada foto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "org-loop",
+      "name": "Uma foto por vez",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.turma }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "org-if-turma",
+      "name": "Achou a turma?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=name = '{{ $json.turma.replace(/'/g, \"\\\\'\") }}' and 'COLE_AQUI_O_ID_DA_PASTA_DO_DRIVE' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            },
+            { "name": "fields", "value": "files(id,name)" },
+            { "name": "supportsAllDrives", "value": "true" },
+            { "name": "includeItemsFromAllDrives", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "org-busca-pasta",
+      "name": "Buscar pasta da turma",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, -100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ ($json.files || []).length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "org-if-pasta",
+      "name": "Pasta existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1400, -100]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "={{ $('Uma foto por vez').item.json.turma }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "COLE_AQUI_O_ID_DA_PASTA_DO_DRIVE"
+        },
+        "options": {}
+      },
+      "id": "org-cria-pasta",
+      "name": "Criar pasta da turma",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1600, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const foto = $('Uma foto por vez').item.json;\nconst j = $json;\nconst folderId = (j.files && j.files.length) ? j.files[0].id : j.id;\nreturn [{ json: { ...foto, folderId } }];"
+      },
+      "id": "org-definir",
+      "name": "Definir pasta destino",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1800, -100]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "id": "org-mover",
+      "name": "Mover foto",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2000, -100]
+    },
+    {
+      "parameters": {},
+      "id": "org-fim",
+      "name": "Concluído",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1000, 200]
+    }
+  ],
+  "connections": {
+    "Executar (manual)": {
+      "main": [[{ "node": "Buscar alunos (Supabase)", "type": "main", "index": 0 }]]
+    },
+    "Buscar alunos (Supabase)": {
+      "main": [[{ "node": "Listar fotos da pasta origem", "type": "main", "index": 0 }]]
+    },
+    "Listar fotos da pasta origem": {
+      "main": [[{ "node": "Descobrir turma de cada foto", "type": "main", "index": 0 }]]
+    },
+    "Descobrir turma de cada foto": {
+      "main": [[{ "node": "Uma foto por vez", "type": "main", "index": 0 }]]
+    },
+    "Uma foto por vez": {
+      "main": [
+        [{ "node": "Concluído", "type": "main", "index": 0 }],
+        [{ "node": "Achou a turma?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Achou a turma?": {
+      "main": [
+        [{ "node": "Buscar pasta da turma", "type": "main", "index": 0 }],
+        [{ "node": "Uma foto por vez", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar pasta da turma": {
+      "main": [[{ "node": "Pasta existe?", "type": "main", "index": 0 }]]
+    },
+    "Pasta existe?": {
+      "main": [
+        [{ "node": "Definir pasta destino", "type": "main", "index": 0 }],
+        [{ "node": "Criar pasta da turma", "type": "main", "index": 0 }]
+      ]
+    },
+    "Criar pasta da turma": {
+      "main": [[{ "node": "Definir pasta destino", "type": "main", "index": 0 }]]
+    },
+    "Definir pasta destino": {
+      "main": [[{ "node": "Mover foto", "type": "main", "index": 0 }]]
+    },
+    "Mover foto": {
+      "main": [[{ "node": "Uma foto por vez", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

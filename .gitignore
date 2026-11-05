@@ -1,0 +1,35 @@
+# Configuração real (URL, chave anon e webhooks)
+config.js
+
+# Segredos
+.env
+.env.*
+!.env.exemplo
+!.env.example
+.dev.vars
+segredo*
+
+# Dados pessoais: planilhas, listas e SQL de importação com nomes
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.docx
+importar-*.sql
+adicionar-*.sql
+remover-*.sql
+
+# Cópia publicada (igual à raiz)
+deploy/
+
+# Ferramentas e lixo
+node_modules/
+.vscode/
+*.bak*
+_backup*
+_bak*
+_original/
+*.zip
+*.log
+Thumbs.db
+.DS_Store

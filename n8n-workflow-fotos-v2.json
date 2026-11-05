@@ -1,0 +1,319 @@
+{
+  "name": "Fotos dos Alunos — upload v2 (pastas por turma)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fotos/googlefotos",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "wh-fotos-v2",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "fotos-googlefotos"
+    },
+    {
+      "parameters": {
+        "url": "https://SEU-PROJETO.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "COLE_AQUI_A_CHAVE_ANON"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "v2-valida-token",
+      "name": "Validar token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "v2-if-token",
+      "name": "Token valido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "url": "=https://SEU-PROJETO.supabase.co/rest/v1/supervisores?select=id,nome,ativo&ativo=eq.true&email=eq.{{ $json.email }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer COLE_AQUI_A_SERVICE_ROLE_KEY" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "v2-busca-sup",
+      "name": "Buscar supervisor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, -100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "v2-if-sup",
+      "name": "Supervisor ativo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [800, -100]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=name = '{{ $('Webhook').item.json.body.turma.replace(/'/g, \"\\\\'\") }}' and 'COLE_AQUI_O_ID_DA_PASTA_DO_DRIVE' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            },
+            {
+              "name": "fields",
+              "value": "files(id,name)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "v2-busca-pasta",
+      "name": "Buscar pasta da turma",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, -160]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ ($json.files || []).length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "v2-if-pasta",
+      "name": "Pasta existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, -160]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "={{ $('Webhook').item.json.body.turma }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "COLE_AQUI_O_ID_DA_PASTA_DO_DRIVE"
+        },
+        "options": {}
+      },
+      "id": "v2-cria-pasta",
+      "name": "Criar pasta da turma",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1400, -60]
+    },
+    {
+      "parameters": {
+        "jsCode": "const wh = $('Webhook').first();\nconst j = $json;\nconst folderId = (j.files && j.files.length) ? j.files[0].id : j.id;\nreturn [{\n  json: { ...wh.json.body, folderId },\n  binary: wh.binary,\n}];"
+      },
+      "id": "v2-preparar",
+      "name": "Preparar upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, -160]
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "foto",
+        "name": "={{ $json.nome }}_{{ $json.numero || $json.matricula }}.jpg",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "id": "v2-upload",
+      "name": "Google Drive — Upload",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1800, -160]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SEU-PROJETO.supabase.co/rest/v1/fotos",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ aluno_id: Number($('Webhook').item.json.body.aluno_id), drive_file_id: $json.id, drive_url: $json.webViewLink || null, enviado_por: $('Buscar supervisor').item.json.id, thumb: $('Webhook').item.json.body.thumb || null }) }}",
+        "options": {}
+      },
+      "id": "v2-insere",
+      "name": "Registrar foto no Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, -160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true }) }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "v2-resp-ok",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2200, -160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erro: \"não autorizado\" }) }}",
+        "options": { "responseCode": 401 }
+      },
+      "id": "v2-resp-401",
+      "name": "Responder 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [600, 140]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erro: \"supervisor não autorizado\" }) }}",
+        "options": { "responseCode": 403 }
+      },
+      "id": "v2-resp-403",
+      "name": "Responder 403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1000, 40]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Validar token", "type": "main", "index": 0 }]]
+    },
+    "Validar token": {
+      "main": [[{ "node": "Token valido?", "type": "main", "index": 0 }]]
+    },
+    "Token valido?": {
+      "main": [
+        [{ "node": "Buscar supervisor", "type": "main", "index": 0 }],
+        [{ "node": "Responder 401", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar supervisor": {
+      "main": [[{ "node": "Supervisor ativo?", "type": "main", "index": 0 }]]
+    },
+    "Supervisor ativo?": {
+      "main": [
+        [{ "node": "Buscar pasta da turma", "type": "main", "index": 0 }],
+        [{ "node": "Responder 403", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar pasta da turma": {
+      "main": [[{ "node": "Pasta existe?", "type": "main", "index": 0 }]]
+    },
+    "Pasta existe?": {
+      "main": [
+        [{ "node": "Preparar upload", "type": "main", "index": 0 }],
+        [{ "node": "Criar pasta da turma", "type": "main", "index": 0 }]
+      ]
+    },
+    "Criar pasta da turma": {
+      "main": [[{ "node": "Preparar upload", "type": "main", "index": 0 }]]
+    },
+    "Preparar upload": {
+      "main": [[{ "node": "Google Drive — Upload", "type": "main", "index": 0 }]]
+    },
+    "Google Drive — Upload": {
+      "main": [[{ "node": "Registrar foto no Supabase", "type": "main", "index": 0 }]]
+    },
+    "Registrar foto no Supabase": {
+      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

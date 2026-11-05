@@ -1,0 +1,163 @@
+{
+  "name": "Fotos dos Alunos — renomear arquivos antigos (→ Nome_Numero.jpg)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ren-trigger",
+      "name": "Executar (manual)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://SEU-PROJETO.supabase.co/rest/v1/alunos?select=matricula,nome,numero&limit=10000",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer COLE_AQUI_A_SERVICE_ROLE_KEY" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ren-alunos",
+      "name": "Buscar alunos (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "ren-loop",
+      "name": "Um aluno por vez",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=(name = '{{ ($json.matricula + '-' + $json.nome + '.jpg').replace(/'/g, \"\\\\'\") }}' or name = '{{ ($json.nome + '.jpg').replace(/'/g, \"\\\\'\") }}') and trashed = false and mimeType != 'application/vnd.google-apps.folder'"
+            },
+            { "name": "fields", "value": "files(id,name)" },
+            { "name": "pageSize", "value": "100" },
+            { "name": "supportsAllDrives", "value": "true" },
+            { "name": "includeItemsFromAllDrives", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ren-busca",
+      "name": "Buscar fotos do aluno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta a lista de renomeações deste aluno; se não houver foto, devolve item vazio pro loop seguir\nconst aluno = $('Um aluno por vez').item.json;\nconst numero = aluno.numero || aluno.matricula;\nconst files = $json.files || [];\nconst out = [];\nfor (const f of files) {\n  const ponto = f.name.lastIndexOf('.');\n  const ext = ponto > 0 ? f.name.slice(ponto) : '.jpg';\n  const novoNome = aluno.nome + '_' + numero + ext;\n  if (f.name === novoNome) continue; // já está no padrão novo\n  out.push({ json: { fileId: f.id, nomeAntigo: f.name, novoNome } });\n}\nif (out.length === 0) {\n  out.push({ json: { fileId: null, novoNome: null } });\n}\nreturn out;"
+      },
+      "id": "ren-preparar",
+      "name": "Preparar renomeação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.fileId }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ren-if",
+      "name": "Tem foto para renomear?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 0]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "supportsAllDrives", "value": "true" },
+            { "name": "fields", "value": "id,name" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.novoNome }) }}",
+        "options": {}
+      },
+      "id": "ren-renomear",
+      "name": "Renomear arquivo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, -100]
+    },
+    {
+      "parameters": {},
+      "id": "ren-fim",
+      "name": "Concluído",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [600, 200]
+    }
+  ],
+  "connections": {
+    "Executar (manual)": {
+      "main": [[{ "node": "Buscar alunos (Supabase)", "type": "main", "index": 0 }]]
+    },
+    "Buscar alunos (Supabase)": {
+      "main": [[{ "node": "Um aluno por vez", "type": "main", "index": 0 }]]
+    },
+    "Um aluno por vez": {
+      "main": [
+        [{ "node": "Concluído", "type": "main", "index": 0 }],
+        [{ "node": "Buscar fotos do aluno", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar fotos do aluno": {
+      "main": [[{ "node": "Preparar renomeação", "type": "main", "index": 0 }]]
+    },
+    "Preparar renomeação": {
+      "main": [[{ "node": "Tem foto para renomear?", "type": "main", "index": 0 }]]
+    },
+    "Tem foto para renomear?": {
+      "main": [
+        [{ "node": "Renomear arquivo", "type": "main", "index": 0 }],
+        [{ "node": "Um aluno por vez", "type": "main", "index": 0 }]
+      ]
+    },
+    "Renomear arquivo": {
+      "main": [[{ "node": "Um aluno por vez", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

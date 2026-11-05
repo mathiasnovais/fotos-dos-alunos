@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e6e63">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fotos dos Alunos">
+<title>Fotos dos Alunos — ALFA CEM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #f5f7f6;
+    --surface: #ffffff;
+    --ink: #22282a;
+    --muted: #5b6467;
+    --accent: #0e6e63;
+    --accent-ink: #0a5049;
+    --accent-soft: #e2f0ed;
+    --border: #dfe5e3;
+    --ok-soft: #e2f0ed;
+    --ok-ink: #0a5049;
+    --pend-soft: #fdf0e3;
+    --pend-ink: #8a4b0f;
+    --err-soft: #fbe7e7;
+    --err-ink: #a12626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Public Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  [hidden] { display: none !important; }
+
+  /* ---------- login ---------- */
+  .login-wrap {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .login-card .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+  .login-card h1 {
+    font-family: "Archivo", sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .login-card .sub { color: var(--muted); font-size: 14.5px; margin: 0 0 22px; }
+
+  label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+  input[type="email"], input[type="text"], input[type="search"] {
+    width: 100%;
+    font: inherit;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--ground);
+    color: var(--ink);
+  }
+  input:focus-visible, button:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .btn {
+    font: inherit;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    background: var(--accent);
+    color: #fff;
+    width: 100%;
+    margin-top: 16px;
+  }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+  .btn-ghost {
+    background: none;
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 13.5px;
+    width: auto;
+    padding: 6px 8px;
+    margin-top: 10px;
+  }
+  .otp-input {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 22px !important;
+    letter-spacing: 0.4em;
+    text-align: center;
+  }
+
+  .msg {
+    font-size: 13.5px;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 14px;
+  }
+  .msg-err { background: var(--err-soft); color: var(--err-ink); }
+  .msg-ok  { background: var(--ok-soft);  color: var(--ok-ink); }
+
+  .demo-banner {
+    background: var(--pend-soft);
+    color: var(--pend-ink);
+    font-size: 13px;
+    text-align: center;
+    padding: 8px 14px;
+  }
+
+  /* ---------- app ---------- */
+  header.app {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header.app .title {
+    font-family: "Archivo", sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    flex: 1;
+    min-width: 0;
+  }
+  header.app .who {
+    font-size: 12.5px;
+    color: var(--muted);
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  header.app button {
+    font: inherit;
+    font-size: 13px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  main { max-width: 680px; margin: 0 auto; padding: 18px 16px 60px; }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 6px; }
+  .toolbar input[type="search"] { flex: 1; background: var(--surface); }
+  .toolbar select {
+    font: inherit;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 0 12px;
+    max-width: 150px;
+  }
+  .counter {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 2px 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  ul.students { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  ul.students li {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  ul.students li:hover { border-color: var(--accent); }
+  .stu-info { flex: 1; min-width: 0; }
+  .stu-nome { font-weight: 600; font-size: 15px; }
+  .stu-meta {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .b-ok   { background: var(--ok-soft);   color: var(--ok-ink); }
+  .b-pend { background: var(--pend-soft); color: var(--pend-ink); }
+
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Archivo", sans-serif; font-weight: 700; font-size: 15px;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .foto-atual { text-align: center; margin-bottom: 14px; }
+  .foto-atual img {
+    width: 132px; height: 132px; object-fit: cover;
+    border-radius: 10px; border: 1px solid var(--border);
+  }
+  .foto-atual .legenda { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .btn-apagar {
+    font: inherit; font-size: 13.5px; font-weight: 600;
+    background: none; border: 1px solid var(--err-ink); border-radius: 8px;
+    color: var(--err-ink); padding: 7px 14px; cursor: pointer; margin-top: 8px;
+  }
+  .btn-apagar:disabled { opacity: 0.55; cursor: default; }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 14.5px; }
+
+  /* ---------- modal ---------- */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(20, 24, 25, 0.55);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 10;
+  }
+  .modal {
+    background: var(--surface);
+    border-radius: 14px 14px 0 0;
+    width: 100%;
+    max-width: 520px;
+    padding: 22px 20px 28px;
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  @media (min-width: 560px) {
+    .overlay { align-items: center; }
+    .modal { border-radius: 14px; }
+  }
+  .modal h2 { font-family: "Archivo", sans-serif; font-size: 19px; margin: 0 0 2px; }
+  .modal .stu-meta { margin-bottom: 14px; }
+  .dicas {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 12px 16px;
+    background: var(--accent-soft);
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: var(--accent-ink);
+    display: grid;
+    gap: 4px;
+  }
+  .dicas li::before { content: "✓ "; font-weight: 600; }
+  .drop {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14.5px;
+    cursor: pointer;
+  }
+  .drop:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .preview { text-align: center; }
+  .preview img {
+    max-width: 100%;
+    max-height: 340px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .preview .size {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .modal-actions .btn { margin-top: 12px; }
+  .btn-secondary { background: var(--ground); color: var(--ink); border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div id="demoBanner" class="demo-banner" hidden>
+  Modo demonstração — Supabase e n8n ainda não configurados. Nada é salvo de verdade.
+</div>
+
+<!-- ===================== TELA: LOGIN ===================== -->
+<div id="viewLogin" class="login-wrap">
+  <div class="login-card">
+    <p class="eyebrow">Colégio ALFA CEM</p>
+    <h1>Fotos dos Alunos</h1>
+    <p class="sub">Acesso restrito aos supervisores. Informe seu e-mail institucional para receber o código de acesso.</p>
+    <form id="formEmail">
+      <label for="email">E-mail institucional</label>
+      <input type="email" id="email" placeholder="nome@exemplo.edu.br" autocomplete="email" required>
+      <button class="btn" id="btnEmail" type="submit">Receber código</button>
+    </form>
+    <div id="msgLogin" hidden></div>
+  </div>
+</div>
+
+<!-- ===================== TELA: CÓDIGO OTP ===================== -->
+<div id="viewOtp" class="login-wrap" hidden>
+  <div class="login-card">
+    <p class="eyebrow">Verificação</p>
+    <h1>Digite o código</h1>
+    <p class="sub">Enviamos um código de acesso para <strong id="otpEmailLabel"></strong>. Confira também a caixa de spam.</p>
+    <form id="formOtp">
+      <label for="otp">Código de acesso</label>
+      <input type="text" id="otp" class="otp-input" inputmode="numeric" maxlength="10" placeholder="········" autocomplete="one-time-code" required>
+      <button class="btn" id="btnOtp" type="submit">Entrar</button>
+    </form>
+    <button class="btn btn-ghost" id="btnVoltar" type="button">Usar outro e-mail</button>
+    <div id="msgOtp" hidden></div>
+  </div>
+</div>
+
+<!-- ===================== TELA: APP ===================== -->
+<div id="viewApp" hidden>
+  <header class="app">
+    <div class="title">Fotos dos Alunos</div>
+    <div class="who" id="whoami"></div>
+    <a href="dashboard.html" id="lnkPainel" style="font-size:13.5px;text-decoration:none;border:1px solid var(--border);border-radius:8px;color:var(--ink);padding:7px 12px">Painel</a>
+    <button id="btnSair" type="button">Sair</button>
+  </header>
+  <main>
+    <div class="toolbar">
+      <input type="search" id="busca" placeholder="Buscar aluno por nome ou matrícula…" aria-label="Buscar aluno">
+      <select id="filtroTurma" aria-label="Filtrar por turma">
+        <option value="">Todas as turmas</option>
+      </select>
+    </div>
+    <div class="counter" id="contador"></div>
+    <ul class="students" id="lista"></ul>
+    <div class="empty" id="vazio" hidden>Nenhum aluno encontrado.</div>
+  </main>
+</div>
+
+<!-- ===================== MODAL: ENVIAR FOTO ===================== -->
+<div id="overlay" class="overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalNome">
+    <h2 id="modalNome"></h2>
+    <div class="stu-meta" id="modalMeta"></div>
+
+    <div id="fotoAtual" class="foto-atual" hidden>
+      <img id="fotoAtualImg" alt="Foto atual do aluno">
+      <div class="legenda">Foto atual — envie outra para substituir</div>
+      <button class="btn-apagar" id="btnApagar" type="button">Apagar esta foto</button>
+    </div>
+
+    <ul class="dicas" id="dicas">
+      <li>Rosto de frente, olhando para a câmera</li>
+      <li>Fundo claro e liso, boa iluminação</li>
+      <li>Sem boné, máscara ou óculos escuros</li>
+      <li>Enquadre dos ombros para cima</li>
+    </ul>
+
+    <div id="dropArea" class="drop">
+      <strong>📷 Tirar foto agora</strong><br>
+      A câmera abre na hora. A foto é ajustada automaticamente para o<br>
+      padrão do reconhecimento facial: JPG · mín. 1280×720 · 100–200 KB
+      <div style="margin-top:10px"><a href="#" id="lnkGaleria" style="color:var(--accent);font-size:13.5px">ou escolher uma foto da galeria</a></div>
+    </div>
+    <input type="file" id="arquivo" accept="image/*" capture="environment" hidden>
+    <input type="file" id="arquivoGaleria" accept="image/*" hidden>
+
+    <div id="previewArea" class="preview" hidden>
+      <img id="previewImg" alt="Pré-visualização da foto selecionada">
+      <div class="size" id="previewSize"></div>
+    </div>
+
+    <div id="msgModal" hidden></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btnCancelar" type="button">Cancelar</button>
+      <button class="btn" id="btnEnviar" type="button" disabled>Enviar foto</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// =====================================================================
+// CONFIGURAÇÃO — preencher o config.js antes de publicar.
+// Enquanto os valores abaixo forem placeholders, a página roda em
+// modo demonstração com dados de exemplo.
+// =====================================================================
+const CONFIG = {
+  // URL do projeto, chave anon e endereços dos webhooks do n8n vêm
+  // de config.js (copie config.exemplo.js e preencha).
+  ...window.CONFIG_PROJETO,
+
+  // Padrão exigido pelo sistema de reconhecimento facial:
+  // JPG/JPEG · resolução mínima 1280×720 · arquivo entre 100 KB e 200 KB
+  RES_MIN_MAIOR: 1280,     // lado maior mínimo (px)
+  RES_MIN_MENOR: 720,      // lado menor mínimo (px)
+  TAM_MIN_BYTES: 100 * 1024,
+  TAM_MAX_BYTES: 200 * 1024,
+};
+
+const DEMO = /COLE_AQUI|SEU-PROJETO/.test(CONFIG.SUPABASE_URL);
+
+const DEMO_ALUNOS = [
+  { id: 1, matricula: "2026001", nome: "Ana Beatriz Souza",   turma: "1A", serie: "1º ano", temFoto: true  },
+  { id: 2, matricula: "2026002", nome: "Bruno Carvalho Lima", turma: "1A", serie: "1º ano", temFoto: false },
+  { id: 3, matricula: "2026003", nome: "Clara Mendes Rocha",  turma: "1B", serie: "1º ano", temFoto: false },
+  { id: 4, matricula: "2026014", nome: "Diego Ferreira Alves",turma: "2A", serie: "2º ano", temFoto: true  },
+  { id: 5, matricula: "2026021", nome: "Eduarda Nunes Costa", turma: "2A", serie: "2º ano", temFoto: false },
+  { id: 6, matricula: "2026033", nome: "Felipe Ramos Teixeira",turma: "3B", serie: "3º ano", temFoto: false },
+];
+
+const sb = DEMO ? null : supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+// ---------------------------------------------------------------------
+// Estado e atalhos de DOM
+// ---------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+let alunos = [];            // [{id, matricula, nome, turma, serie, temFoto}]
+let alunoSelecionado = null;
+let blobPronto = null;      // blob comprimido aguardando envio
+let thumbPronta = null;     // miniatura (dataURL) para exibir na lista
+let emailLogin = "";
+
+function mostrar(view) {
+  ["viewLogin", "viewOtp", "viewApp"].forEach((v) => { $(v).hidden = v !== view; });
+}
+function aviso(elId, texto, tipo) {
+  const el = $(elId);
+  el.hidden = false;
+  el.className = "msg " + (tipo === "erro" ? "msg-err" : "msg-ok");
+  el.textContent = texto;
+}
+function limparAviso(elId) { $(elId).hidden = true; }
+
+// ---------------------------------------------------------------------
+// Login por e-mail (OTP)
+// ---------------------------------------------------------------------
+$("formEmail").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  limparAviso("msgLogin");
+  emailLogin = $("email").value.trim().toLowerCase();
+  $("btnEmail").disabled = true;
+
+  if (DEMO) {
+    await entrarNoApp(emailLogin);
+    $("btnEmail").disabled = false;
+    return;
+  }
+
+  const { error } = await sb.auth.signInWithOtp({
+    email: emailLogin,
+    options: { shouldCreateUser: false }, // só e-mails já cadastrados no Auth
+  });
+  $("btnEmail").disabled = false;
+
+  if (error) {
+    const naoCadastrado = /signup|not allowed|not found/i.test(error.message);
+    aviso("msgLogin", naoCadastrado
+      ? "Este e-mail não está cadastrado como supervisor. Fale com a coordenação."
+      : "Não foi possível enviar o código: " + error.message, "erro");
+    return;
+  }
+  $("otpEmailLabel").textContent = emailLogin;
+  limparAviso("msgOtp");
+  $("otp").value = "";
+  mostrar("viewOtp");
+  $("otp").focus();
+});
+
+$("formOtp").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  limparAviso("msgOtp");
+  $("btnOtp").disabled = true;
+
+  const { error } = await sb.auth.verifyOtp({
+    email: emailLogin,
+    token: $("otp").value.trim(),
+    type: "email",
+  });
+  $("btnOtp").disabled = false;
+
+  if (error) {
+    aviso("msgOtp", "Código inválido ou expirado. Confira e tente de novo.", "erro");
+    return;
+  }
+  await entrarNoApp(emailLogin);
+});
+
+$("btnVoltar").addEventListener("click", () => mostrar("viewLogin"));
+
+$("btnSair").addEventListener("click", async () => {
+  if (!DEMO) await sb.auth.signOut();
+  mostrar("viewLogin");
+});
+
+// Sessão já existente (voltou à página sem expirar)
+async function restaurarSessao() {
+  if (DEMO) { $("demoBanner").hidden = false; return; }
+  const { data } = await sb.auth.getSession();
+  if (data.session) await entrarNoApp(data.session.user.email);
+}
+
+// ---------------------------------------------------------------------
+// App: lista de alunos
+// ---------------------------------------------------------------------
+async function entrarNoApp(email) {
+  $("whoami").textContent = email;
+  mostrar("viewApp");
+  await carregarAlunos();
+}
+
+async function carregarAlunos() {
+  if (DEMO) {
+    alunos = DEMO_ALUNOS.map((a) => ({ ...a }));
+  } else {
+    // Confirma que o e-mail logado é um supervisor ativo
+    const { data: sup } = await sb.from("supervisores")
+      .select("id").eq("email", $("whoami").textContent).eq("ativo", true).maybeSingle();
+    if (!sup) {
+      await sb.auth.signOut();
+      mostrar("viewLogin");
+      aviso("msgLogin", "Seu e-mail não está na lista de supervisores ativos. Fale com a coordenação.", "erro");
+      return;
+    }
+    const { data, error } = await sb.from("alunos")
+      .select("id, matricula, nome, numero, turma, serie, fotos(id, thumb)")
+      .eq("ativo", true)
+      .order("nome");
+    if (error) {
+      alunos = [];
+      aviso("msgLogin", "Erro ao carregar alunos: " + error.message, "erro");
+    } else {
+      alunos = data.map((a) => ({
+        id: a.id, matricula: a.matricula, nome: a.nome,
+        numero: a.numero || a.matricula,
+        turma: a.turma, serie: a.serie,
+        temFoto: (a.fotos || []).length > 0,
+        thumb: (a.fotos || []).map((f) => f.thumb).filter(Boolean).pop() || null,
+      }));
+    }
+  }
+  montarFiltroTurmas();
+  renderLista();
+}
+
+function montarFiltroTurmas() {
+  const sel = $("filtroTurma");
+  const turmas = [...new Set(alunos.map((a) => a.turma))].sort();
+  sel.length = 1; // mantém "Todas as turmas"
+  turmas.forEach((t) => sel.add(new Option("Turma " + t, t)));
+}
+
+function renderLista() {
+  const busca = $("busca").value.trim().toLowerCase();
+  const turma = $("filtroTurma").value;
+  const filtrados = alunos.filter((a) =>
+    (!turma || a.turma === turma) &&
+    (!busca || a.nome.toLowerCase().includes(busca) || a.matricula.includes(busca))
+  );
+
+  const ul = $("lista");
+  ul.innerHTML = "";
+  filtrados.forEach((a) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <div class="avatar"></div>
+      <div class="stu-info">
+        <div class="stu-nome"></div>
+        <div class="stu-meta"></div>
+      </div>
+      <span class="badge ${a.temFoto ? "b-ok" : "b-pend"}">${a.temFoto ? "Foto enviada" : "Pendente"}</span>`;
+    const av = li.querySelector(".avatar");
+    if (a.thumb) {
+      const img = document.createElement("img");
+      img.src = a.thumb;
+      img.alt = "";
+      av.appendChild(img);
+    } else {
+      av.textContent = a.nome.trim().split(/\s+/).map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+    }
+    li.querySelector(".stu-nome").textContent = a.nome;
+    li.querySelector(".stu-meta").textContent = `${a.matricula} · ${a.serie} · Turma ${a.turma}`;
+    li.addEventListener("click", () => abrirModal(a));
+    ul.appendChild(li);
+  });
+
+  $("vazio").hidden = filtrados.length > 0;
+  const pendentes = filtrados.filter((a) => !a.temFoto).length;
+  $("contador").textContent =
+    `${filtrados.length} aluno${filtrados.length === 1 ? "" : "s"} · ${pendentes} sem foto`;
+}
+
+$("busca").addEventListener("input", renderLista);
+$("filtroTurma").addEventListener("change", renderLista);
+
+// ---------------------------------------------------------------------
+// Modal de envio
+// ---------------------------------------------------------------------
+function abrirModal(aluno) {
+  alunoSelecionado = aluno;
+  blobPronto = null;
+  $("modalNome").textContent = aluno.nome;
+  $("modalMeta").textContent = `${aluno.matricula} · ${aluno.serie} · Turma ${aluno.turma}`;
+  if (aluno.temFoto) {
+    $("fotoAtualImg").hidden = !aluno.thumb;
+    if (aluno.thumb) $("fotoAtualImg").src = aluno.thumb;
+    $("fotoAtual").querySelector(".legenda").textContent = aluno.thumb
+      ? "Foto atual — envie outra para substituir"
+      : "Este aluno já tem foto enviada (sem miniatura salva)";
+    $("btnApagar").disabled = false;
+    $("btnApagar").textContent = "Apagar esta foto";
+    $("fotoAtual").hidden = false;
+  } else {
+    $("fotoAtual").hidden = true;
+  }
+  $("previewArea").hidden = true;
+  $("dropArea").hidden = false;
+  $("btnEnviar").disabled = true;
+  $("btnEnviar").textContent = "Enviar foto";
+  limparAviso("msgModal");
+  $("arquivo").value = "";
+  $("arquivoGaleria").value = "";
+  $("overlay").hidden = false;
+}
+
+function fecharModal() { $("overlay").hidden = true; alunoSelecionado = null; }
+
+$("btnApagar").addEventListener("click", async () => {
+  if (!alunoSelecionado || !alunoSelecionado.temFoto) return;
+  if (!confirm(`Apagar a foto de ${alunoSelecionado.nome}? O arquivo será removido do Drive e o aluno volta a "Pendente".`)) return;
+
+  const btn = $("btnApagar");
+  btn.disabled = true;
+  btn.textContent = "Apagando…";
+  limparAviso("msgModal");
+
+  try {
+    if (DEMO) {
+      await new Promise((r) => setTimeout(r, 700));
+    } else {
+      const { data } = await sb.auth.getSession();
+      const resp = await fetch(CONFIG.N8N_DELETE_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + data.session.access_token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ aluno_id: alunoSelecionado.id }),
+      });
+      if (!resp.ok) throw new Error("o servidor respondeu " + resp.status);
+    }
+    alunoSelecionado.temFoto = false;
+    alunoSelecionado.thumb = null;
+    renderLista();
+    fecharModal();
+  } catch (err) {
+    aviso("msgModal", "Falha ao apagar (" + err.message + "). Tente de novo.", "erro");
+    btn.disabled = false;
+    btn.textContent = "Apagar esta foto";
+  }
+});
+
+$("btnCancelar").addEventListener("click", fecharModal);
+$("overlay").addEventListener("click", (e) => { if (e.target === $("overlay")) fecharModal(); });
+$("dropArea").addEventListener("click", () => $("arquivo").click());
+$("lnkGaleria").addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation(); // não deixa o clique cair no dropArea (que abriria a câmera)
+  $("arquivoGaleria").click();
+});
+
+$("arquivo").addEventListener("change", () => tratarArquivo($("arquivo")));
+$("arquivoGaleria").addEventListener("change", () => tratarArquivo($("arquivoGaleria")));
+
+async function tratarArquivo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  limparAviso("msgModal");
+  let resultado;
+  try {
+    resultado = await ajustarParaPadrao(file);
+  } catch (err) {
+    aviso("msgModal", err.message === "res-min"
+      ? "Esta imagem é menor que 1280×720 pixels e o reconhecimento facial vai rejeitá-la. Tire a foto novamente na resolução normal da câmera."
+      : "Não foi possível ler esta imagem. Use um arquivo JPG ou PNG.", "erro");
+    input.value = "";
+    return;
+  }
+  blobPronto = resultado.blob;
+  thumbPronta = await gerarMiniatura(blobPronto);
+  $("previewImg").src = URL.createObjectURL(blobPronto);
+  const kb = Math.round(blobPronto.size / 1024);
+  $("previewSize").textContent =
+    `${resultado.largura}×${resultado.altura} px · ${kb} KB · JPG — dentro do padrão do reconhecimento facial`;
+  $("dropArea").hidden = true;
+  $("previewArea").hidden = false;
+  $("btnEnviar").disabled = false;
+}
+
+$("previewArea").addEventListener("click", () => $("arquivo").click());
+
+// Miniatura leve (máx. 128 px, ~4 KB) gravada no Supabase para a lista
+// mostrar o rosto sem depender do Google Drive.
+async function gerarMiniatura(blob) {
+  const bmp = await createImageBitmap(blob);
+  const escala = 128 / Math.max(bmp.width, bmp.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bmp.width * escala);
+  canvas.height = Math.round(bmp.height * escala);
+  canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
+  return canvas.toDataURL("image/jpeg", 0.6);
+}
+
+// Converte qualquer imagem para o padrão do reconhecimento facial:
+// JPG, lado maior ≥1280 e lado menor ≥720, arquivo entre 100 e 200 KB.
+async function ajustarParaPadrao(file) {
+  const bmp = await createImageBitmap(file);
+  const maior = Math.max(bmp.width, bmp.height);
+  const menor = Math.min(bmp.width, bmp.height);
+  if (maior < CONFIG.RES_MIN_MAIOR || menor < CONFIG.RES_MIN_MENOR) {
+    bmp.close();
+    throw new Error("res-min");
+  }
+
+  // Começa reduzindo para ~1600 px no lado maior (sempre ≥ o mínimo exigido).
+  let lado = Math.min(maior, 1600);
+  let resultado = await gerar(bmp, lado);
+
+  // Arquivo ficou leve demais (<100 KB) mesmo em qualidade máxima:
+  // aumenta a resolução (até o tamanho original) e tenta de novo.
+  while (resultado.blob.size < CONFIG.TAM_MIN_BYTES && lado < maior) {
+    lado = Math.min(maior, Math.round(lado * 1.3));
+    resultado = await gerar(bmp, lado);
+  }
+  bmp.close();
+  return resultado;
+
+  // Desenha no canvas em "lado" px (lado maior) e busca a maior qualidade
+  // JPEG que caiba em 200 KB.
+  async function gerar(bitmap, ladoMaior) {
+    const escala = ladoMaior / Math.max(bitmap.width, bitmap.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * escala);
+    canvas.height = Math.round(bitmap.height * escala);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    const paraBlob = (q) => new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob falhou"))), "image/jpeg", q));
+
+    let lo = 0.3, hi = 0.95;
+    let melhor = null;
+    for (let i = 0; i < 7; i++) {
+      const q = (lo + hi) / 2;
+      const b = await paraBlob(q);
+      if (b.size > CONFIG.TAM_MAX_BYTES) { hi = q; }
+      else { melhor = b; lo = q; }
+    }
+    if (!melhor) melhor = await paraBlob(0.3); // imagem muito complexa: fica o mais leve possível
+    return { blob: melhor, largura: canvas.width, altura: canvas.height };
+  }
+}
+
+$("btnEnviar").addEventListener("click", async () => {
+  if (!blobPronto || !alunoSelecionado) return;
+  const btn = $("btnEnviar");
+  btn.disabled = true;
+  btn.textContent = "Enviando…";
+  limparAviso("msgModal");
+
+  try {
+    if (DEMO) {
+      await new Promise((r) => setTimeout(r, 900)); // simula o envio
+    } else {
+      const { data } = await sb.auth.getSession();
+      const form = new FormData();
+      form.append("foto", blobPronto, `${alunoSelecionado.nome}_${alunoSelecionado.numero}.jpg`);
+      form.append("aluno_id", alunoSelecionado.id);
+      form.append("matricula", alunoSelecionado.matricula);
+      form.append("nome", alunoSelecionado.nome);
+      form.append("numero", alunoSelecionado.numero);
+      form.append("turma", alunoSelecionado.turma);
+      form.append("thumb", thumbPronta || "");
+      const resp = await fetch(CONFIG.N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { Authorization: "Bearer " + data.session.access_token },
+        body: form,
+      });
+      if (!resp.ok) throw new Error("o servidor respondeu " + resp.status);
+    }
+    alunoSelecionado.temFoto = true;
+    alunoSelecionado.thumb = thumbPronta;
+    renderLista();
+    aviso("msgModal", "Foto salva com sucesso!", "ok");
+    btn.textContent = "Enviar foto";
+    setTimeout(fecharModal, 1200);
+  } catch (err) {
+    aviso("msgModal", "Falha no envio (" + err.message + "). Verifique a conexão e tente de novo.", "erro");
+    btn.disabled = false;
+    btn.textContent = "Tentar novamente";
+  }
+});
+
+restaurarSessao();
+</script>
+</body>
+</html>

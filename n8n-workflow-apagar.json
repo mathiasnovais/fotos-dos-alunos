@@ -1,0 +1,277 @@
+{
+  "name": "Fotos dos Alunos — apagar foto",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fotos/apagar",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "wh-apagar-01",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "fotos-apagar"
+    },
+    {
+      "parameters": {
+        "url": "https://SEU-PROJETO.supabase.co/auth/v1/user",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "COLE_AQUI_A_CHAVE_ANON"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ $json.headers.authorization }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-valida-token2",
+      "name": "Validar token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-token-ok2",
+      "name": "Token valido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "=https://SEU-PROJETO.supabase.co/rest/v1/supervisores?select=id,ativo&ativo=eq.true&email=eq.{{ $json.email }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer COLE_AQUI_A_SERVICE_ROLE_KEY" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-busca-sup2",
+      "name": "Buscar supervisor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, -100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-sup-ok2",
+      "name": "Supervisor ativo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [880, -100]
+    },
+    {
+      "parameters": {
+        "url": "=https://SEU-PROJETO.supabase.co/rest/v1/fotos?select=id,drive_file_id&aluno_id=eq.{{ $('Webhook').item.json.body.aluno_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer COLE_AQUI_A_SERVICE_ROLE_KEY" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-busca-fotos",
+      "name": "Buscar fotos do aluno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, -160],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.drive_file_id }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-tem-foto",
+      "name": "Tem foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1320, -160]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.drive_file_id }}"
+        },
+        "options": {}
+      },
+      "id": "gdrive-delete",
+      "name": "Google Drive — Apagar arquivo",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1540, -220]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://SEU-PROJETO.supabase.co/rest/v1/fotos?aluno_id=eq.{{ $('Webhook').item.json.body.aluno_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLE_AQUI_A_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer COLE_AQUI_A_SERVICE_ROLE_KEY" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-apaga-registro",
+      "name": "Apagar registros no Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, -220],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true }) }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "resp-ok2",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1980, -160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, aviso: \"aluno sem foto\" }) }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "resp-sem-foto",
+      "name": "Responder sem foto",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1540, -40]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erro: \"não autorizado\" }) }}",
+        "options": { "responseCode": 401 }
+      },
+      "id": "resp-401b",
+      "name": "Responder 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, 140]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, erro: \"supervisor não autorizado\" }) }}",
+        "options": { "responseCode": 403 }
+      },
+      "id": "resp-403b",
+      "name": "Responder 403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1100, 40]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Validar token", "type": "main", "index": 0 }]]
+    },
+    "Validar token": {
+      "main": [[{ "node": "Token valido?", "type": "main", "index": 0 }]]
+    },
+    "Token valido?": {
+      "main": [
+        [{ "node": "Buscar supervisor", "type": "main", "index": 0 }],
+        [{ "node": "Responder 401", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar supervisor": {
+      "main": [[{ "node": "Supervisor ativo?", "type": "main", "index": 0 }]]
+    },
+    "Supervisor ativo?": {
+      "main": [
+        [{ "node": "Buscar fotos do aluno", "type": "main", "index": 0 }],
+        [{ "node": "Responder 403", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar fotos do aluno": {
+      "main": [[{ "node": "Tem foto?", "type": "main", "index": 0 }]]
+    },
+    "Tem foto?": {
+      "main": [
+        [{ "node": "Google Drive — Apagar arquivo", "type": "main", "index": 0 }],
+        [{ "node": "Responder sem foto", "type": "main", "index": 0 }]
+      ]
+    },
+    "Google Drive — Apagar arquivo": {
+      "main": [[{ "node": "Apagar registros no Supabase", "type": "main", "index": 0 }]]
+    },
+    "Apagar registros no Supabase": {
+      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
